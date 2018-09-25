@@ -81,7 +81,7 @@ def qr(img):
     cor_level, mask = sys_info[0 : 2], sys_info[2 : 5]
     print('Correction level: %s'%cor_level)
     print('Sys mask: %s'%mask, end = '\n\n')
-    temp = code[8:21, 18:20]
+    temp = code[9:21, 18:16:-1]
     print(temp)
     print(temp.flatten())
     print(''.join(temp.flatten()))
@@ -89,7 +89,7 @@ def qr(img):
     #~ data_type = [[code[y][x] for x in range(20, 18, -1)] for y in range(20, 15, -1)]
     cols = ''
     for x, i in enumerate(range(21, 14, -2)):
-        cols += ''.join(code[9:21, i - 2:i].flatten()) if x % 2 != 0 else ''.join(code[9:21, i - 2:i].flatten())[::-1]
+        cols += ''.join(code[8:21, i - 2:i].flatten()) if x % 2 != 0 else ''.join(code[8:21, i - 2:i].flatten())[::-1]
     #~ for i in range(13, 8, -2):
         #~ cols += ''.join(code[0:21, i - 2:i].flatten())[::-1]
     #~ for i in range(0, len(cols), 24):
