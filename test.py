@@ -82,9 +82,9 @@ def qr(img):
     print('Correction level: %s'%cor_level)
     print('Sys mask: %s'%mask, end = '\n\n')
     #~ temp1 = code[9:21, 19:21]
-    #~ temp2 = code[9:21, 18:16:-1]
+    #~ temp = ''.join(code[9:21, 15:17].flatten())[::-1]
     #~ print(temp)
-    #~ print(temp.flatten())
+    #~ print(temp)
     #~ print(''.join(temp.flatten()))
     #~ print(''.join(code[9:21, 19 - 2:19].flatten()))
     #~ data_type = [[code[y][x] for x in range(20, 18, -1)] for y in range(20, 15, -1)]
@@ -95,16 +95,14 @@ def qr(img):
         #~ cols += ''.join(code[0:21, i - 2:i].flatten())[::-1]
     #~ for i in range(0, len(cols), 24):
         #~ print(cols[i:i + 24], end = ' ')
-    print('\n')
-    print(cols[:24], cols[24:])
-    print('\n' * 4)
+    
     
     #~ data_type = cols[-1][0] + cols[-2][0] + cols[-1][1] + cols[-2][1]
     data_type = str(cols[:4])    
 
     m = "%i%i%i%i"%(int(masks[mask](20, 20)), int(masks[mask](19, 20)), int(masks[mask](20, 19)), int(masks[mask](19, 19)))
-    print('Data type: %s'%(str(int(data_type, 2) ^ int(m, 2))), m)
-    data_type = str(int(data_type, 2) ^ int(m, 2)).rjust(4, '0')
+    #~ print('Data type: %s'%(bin(int(data_type, 2) ^ int(m, 2))), m)
+    data_type = bin(int(data_type, 2) ^ int(m, 2))[2:].rjust(4, '0')
     
     print('Data type: %s'%data_type)
     #~ info = bin(int(cols[4:96], 2) ^ int(cor_level + ''.join([m + cor_level for i in range(15)]), 2))[2:].rjust(20, '0')
@@ -113,25 +111,50 @@ def qr(img):
     #~ print(((str(cor_level)+str(m))*16)[:92])
     #~ print(cor_level + ''.join([m + cor_level for i in range(15)]))
     read_mask = (cor_level + m) * 34 + cor_level
+    read_mask = '10' * 34
     read_cols = str(bin(int(cols[4:], 2) ^ int(read_mask[:len(cols[4:])], 2)))[2:].rjust(len(cols[4:]), '0')
+    
+    print('\n')
+    print(cols[24:48])
+    print('10' * 12)
+    print(str(bin(int(cols[24:48], 2) ^ int('10' * 12, 2)))[2:].rjust(len(cols[24:48]), '0'))#[24:48])
+    print('\n' * 4)
+    
+    
     p = int(read_cols[:10], 2)
+    p = int(read_cols[:8], 2)
+    print('Read mask: %s'%read_mask[:6])
     print('Packages: %s'%p)
     #~ print(cor_level, m)
-    #~ done = [read_cols[19 + i : 9 + i : -1] for i in range(0, p * 10, 10)]
-    done = [read_cols[10 + i : 14 + i] for i in range(0, p * 4, 4)]
+
     
-    print(read_cols[:10], read_cols[10:])
+    print(read_cols[:8], read_cols[8:])
+    done = [read_cols[10 + i : 14 + i] for i in range(0, p * 4, 4)]
     print(done)
-    print('\n')
+    
+    if data_type == '0001':
+        for i in done:
+            print(int(i, 2))
+    
+    
+    #~ done = [read_cols[19 + i : 9 + i : -1] for i in range(0, p * 10, 10)]
+    #~ done = [read_cols[19 + i : 11 + i : -1] for i in range(0, p * 8, 8)]
+    done = [read_cols[8 + i : 16 + i] for i in range(0, p * 8, 8)]
+    print(done)
+    
+    #~ print('\n')
     #~ print(str(bin(int(cols[4:], 2) ^ int(read_mask[:len(cols[4:])], 2)))[2:])
     #~ print(read_cols)
-    print(cols[:50])
-    print('\n')
-    print('\n' * 4)
+    #~ print(cols[:50])
+    #~ print('\n')
+    #~ print('\n' * 4)
     # брать по 10 бит и делать инверсию 
     if data_type == '0001':
         for i in done:
             print(int(i, 2))
+    elif data_type == '0100':
+        for i in done:
+            print(chr(int(i, 2)))
     
     #~ print(cols[:8], cols[4 : 12], cols[12 : 20], cols[20 : 28], cols[28 : 36], cols[36 : 44])
     #~ print(list(map(lambda x: int(x, 2), [cols[:8], cols[4 : 12], cols[12 : 20], cols[20 : 28], cols[28 : 36], cols[36 : 44]])))
@@ -140,8 +163,8 @@ def qr(img):
     cv2.imshow('cropped', gray_cropped)
     cv2.imshow('default', gray)
     cv2.waitKey(1000000)
-    
-print(qr(cv2.imread('qrcode12.png')))
+
+print(qr(cv2.imread('habr.png')))
 
 
 
