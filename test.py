@@ -72,7 +72,8 @@ def qr(img):
 
 
     #~ code = [['1' if gray_cropped[y][i] < 128 else '0' for i in range(0, len(gray_cropped[y]), 8)] for y in range(0, len(gray_cropped), 8)]
-    code = np.array([['1' if gray_cropped[y][i] < 128 else '0' for i in range(0, len(gray_cropped[y]), 8)] for y in range(0, len(gray_cropped), 8)])
+    pixel = 6
+    code = np.array([['1' if gray_cropped[y][i] < 128 else '0' for i in range(0, len(gray_cropped[y]), pixel)] for y in range(0, len(gray_cropped), pixel)])
     print('\n'.join(' '.join(i) for i in code))
 
     sys_info = bin(int(''.join(code[8][0 : 5]), 2) ^ int('10101', 2))[2:].rjust(5, '0')
@@ -83,24 +84,24 @@ def qr(img):
     print('Correction level: %s'%cor_level)
     print('Sys mask: %s'%mask, end = '\n\n')
     
-    cv2.imshow('cropped', gray_cropped)
-    cv2.imshow('default', gray)
-    cv2.waitKey(1000000)
+  
     
-    
-    code1 = np.zeros(shape=code.shape,dtype=np.uint8)
+    code_masked = np.zeros(shape = code.shape, dtype = object)
     for i in range(code.shape[1]):
         for j in range(code.shape[0]):
-            code1[j,i]= int(code[j,i], 2) ^ int(masks[mask](i,j))
+            code_masked[j,i] = str(int(code[j, i], 2) ^ int(masks[mask](i,j)))
     
     
     #~ cols = ''
     #~ for x, i in enumerate(range(21, 14, -2)):
         #~ cols += ''.join(code1[9:21, i - 1:i - 3:-1].flatten()) if x % 2 != 0 else ''.join(code1[9:21, i - 2:i].flatten())[::-1]
-    print(code1)
-    print('dt: ', code1[20,20],code1[20,19],code1[19,20],code1[19,19],sep='')
+    print('\n'.join(' '.join(i) for i in code_masked))
+    print('dt: ', code_masked[20, 20], code_masked[20, 19], code_masked[19, 20], code_masked[19, 19], sep = '')
+    code_masked = np.array(code_masked.tolist())
     print("------------------------------------------------------------------------------------------")
-        
+    #~ cv2.imshow('cropped', gray_cropped)
+    #~ cv2.imshow('default', gray)
+    #~ cv2.waitKey(1000000)
 #---------------------------------------------------------------------------------------------
     
     #~ temp1 = code[9:21, 19:21]
@@ -111,10 +112,14 @@ def qr(img):
     #~ print(''.join(code[9:21, 19 - 2:19].flatten()))
     #~ data_type = [[code[y][x] for x in range(20, 18, -1)] for y in range(20, 15, -1)]
     cols = ''
-    for x, i in enumerate(range(21, 14, -2)):
-        cols += ''.join(code[9:21, i - 1:i - 3:-1].flatten()) if x % 2 != 0 else ''.join(code[9:21, i - 2:i].flatten())[::-1]
+    for x, i in enumerate(range(21, 12, -2)):
+        cols += ''.join(code_masked[9:21, i - 1:i - 3:-1].flatten()) if x % 2 != 0 else ''.join(code_masked[9:21, i - 2:i].flatten())[::-1]
+    cols += ''.join(code_masked[8:6:-1, 12:10:-1].flatten())
+    for x, i in enumerate(range(12, 8, -2)):
+        cols += ''.join(code_masked[0:6, i - 1:i - 3:-1].flatten()) if x % 2 != 0 else ''.join(code_masked[0:6, i - 2:i].flatten())[::-1]
+        
     #~ for i in range(13, 8, -2):
-        #~ cols += ''.join(code[0:21, i - 2:i].flatten())[::-1]
+        #~ cols += ''.join(code_masked[0:21, i - 2:i].flatten())[::-1]
     #~ for i in range(0, len(cols), 24):
         #~ print(cols[i:i + 24], end = ' ')
     
@@ -126,7 +131,7 @@ def qr(img):
     #~ m = "%i%i%i%i"%(int(masks[mask](20, 20)), int(masks[mask](19, 20)), int(masks[mask](20, 19)), int(masks[mask](19, 19)))
     print('m: ', m)
     #~ print('Data type: %s'%(bin(int(data_type, 2) ^ int(m, 2))), m)
-    data_type = bin(int(data_type, 2) ^ int(m, 2))[2:].rjust(4, '0')
+    data_type = ''.join([code_masked[20, 20], code_masked[20, 19], code_masked[19, 20], code_masked[19, 19]])
     
     print('Data type: %s'%data_type)
     #~ info = bin(int(cols[4:96], 2) ^ int(cor_level + ''.join([m + cor_level for i in range(15)]), 2))[2:].rjust(20, '0')
@@ -146,18 +151,19 @@ def qr(img):
     
     
     
-    p = int(bin(int(cols[4:4 + d[data_type]], 2) ^ int(read_mask[:d[data_type]], 2))[2:].rjust(d[data_type], '0'), 2)
+    p = int(cols[4:4 + d[data_type]], 2)
     
     
     
     print('Read mask: %s'%read_mask[:6])
-    print('Packages: %s'%p)
+    print('Packages: %s (%s)'%(p, cols[4:4 + d[data_type]]))
 
     #~ read_mask = '10' * 34    
     read_cols = bin(int(cols[4:], 2) ^ int(read_mask[:len(cols[4:])], 2))[2:].rjust(len(cols[4:]), '0')[d[data_type]:]
     print(cols[4:24])
     print(read_mask[:20])
     print(read_cols[:20])
+    print(cols[:20])
     #~ print(bin(int(cols[4:24], 2) ^ int(read_mask[:20], 2))[2:].rjust(d[data_type], '0').rjust(20, '0')[:20])
     #~ read_cols = read_cols[:8] + read_cols[20:]
     #~ print('\n')
@@ -182,7 +188,12 @@ def qr(img):
     #~ 
     
     #~ done = [read_cols[i + d[data_type]: i : -1] for i in range(0, p * d[data_type], d[data_type])]
-    done = [read_cols[i: i + 4] for i in range(0, p * d[data_type], d[data_type])]
+    
+    
+    done = [cols[i : i + d[data_type]] for i in range(4 + d[data_type], 4 + d[data_type] + p * d[data_type], d[data_type])]
+    #~ done = [cols[i : i + 4] for i in range(4 + d[data_type], 4 + d[data_type] + p * 4, 4)]
+    
+    
     #~ done = [read_cols[9 + i : 19 + i] for i in range(0, p * 10, 10)]
     #~ done = [read_cols[19 + i : 11 + i : -1] for i in range(0, p * 8, 8)]
     #~ done = [read_cols[i : 8 + i] for i in range(0, p * 8 + 1, 8)]
@@ -190,7 +201,7 @@ def qr(img):
     
     print('\n')
     #~ print(str(bin(int(cols[4:], 2) ^ int(read_mask[:len(cols[4:])], 2)))[2:])
-    print(read_cols[:])
+    print(cols[:4], cols[4 : 4 + d[data_type]], cols[4 + d[data_type]:])
     print('\n')
      
     if data_type == '0001':
@@ -210,4 +221,4 @@ def qr(img):
 
 #~ print(qr(cv2.imread('qrcode12.png')))
 #~ print(qr(cv2.imread('qrcodehelloworld.png')))
-print(qr(cv2.imread('qrcode100.png')))
+print(qr(cv2.imread('qrcode15.png')))
