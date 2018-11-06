@@ -57,6 +57,7 @@ def qr(img):
              '110': lambda j, i: ((i * j) % 2 + (i * j) % 3) % 2 == 0,
              '111': lambda j, i: ((i + j) % 2 + (i * j) % 3) % 2 == 0}
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0.3)
     a = np.where(gray <= 80)
     if a[1][0] < gray.shape[1] // 2:
         deg = atan((a[0][0] - a[0][np.where(a[1] == a[1].max())[0][0]]) / (a[1][0] - a[1].max())) * (180 / pi)
@@ -64,15 +65,19 @@ def qr(img):
         deg = atan((a[0][0] - a[0][np.where(a[1] == a[1].min())[0][0]]) / (a[1][0] - a[1].min())) * (180 / pi)
     rows, cols = gray.shape
     M = cv2.getRotationMatrix2D((cols / 2, rows / 2), deg, 1)
-    img_rotated = cv2.warpAffine(img, M, (cols, rows), borderValue = (255, 255, 255))
+    #~ img_rotated = cv2.warpAffine(img, M, img.shape, borderValue = (255, 255, 255))
     gray_rotated = cv2.warpAffine(gray, M, (cols, rows), borderValue = (255, 255, 255))
-    a = np.where(gray_rotated <= 128)
-    gray_cropped = gray_rotated[a[0][0] : a[0][-1], a[0][0] : a[0][-1]]
+    ret, gray_rotated = cv2.threshold(gray_rotated, 128, 255, cv2.THRESH_BINARY)
+    a = np.where(gray_rotated < 128)
+    gray_cropped = gray_rotated[a[0][0] + 2 : a[0][-1], a[0][0] + 2 : a[0][-1]]
     
+    #~ gray_cropped = cv2.GaussianBlur(gray_cropped, (3, 3), 0.3)
+    #~ ret, gray_cropped = cv2.threshold(gray_cropped, 200, 255, cv2.THRESH_BINARY)
 
 
     #~ code = [['1' if gray_cropped[y][i] < 128 else '0' for i in range(0, len(gray_cropped[y]), 8)] for y in range(0, len(gray_cropped), 8)]
-    pixel = 6
+    pixel = round(len(gray_cropped[0]) / 21)
+    print('Pixel: ', pixel)
     code = np.array([['1' if gray_cropped[y][i] < 128 else '0' for i in range(0, len(gray_cropped[y]), pixel)] for y in range(0, len(gray_cropped), pixel)])
     print('\n'.join(' '.join(i) for i in code))
 
@@ -160,10 +165,10 @@ def qr(img):
 
     #~ read_mask = '10' * 34    
     read_cols = bin(int(cols[4:], 2) ^ int(read_mask[:len(cols[4:])], 2))[2:].rjust(len(cols[4:]), '0')[d[data_type]:]
-    print(cols[4:24])
-    print(read_mask[:20])
-    print(read_cols[:20])
-    print(cols[:20])
+    #~ print(cols[4:24])
+    #~ print(read_mask[:20])
+    #~ print(read_cols[:20])
+    #~ print(cols[:20])
     #~ print(bin(int(cols[4:24], 2) ^ int(read_mask[:20], 2))[2:].rjust(d[data_type], '0').rjust(20, '0')[:20])
     #~ read_cols = read_cols[:8] + read_cols[20:]
     #~ print('\n')
@@ -189,36 +194,67 @@ def qr(img):
     
     #~ done = [read_cols[i + d[data_type]: i : -1] for i in range(0, p * d[data_type], d[data_type])]
     
-    
-    done = [cols[i : i + d[data_type]] for i in range(4 + d[data_type], 4 + d[data_type] + p * d[data_type], d[data_type])]
+    if data_type == '0001':
+        if p == 1:
+            done = [cols[4 + d[data_type] : 4 + d[data_type] + 4]]
+        elif p == 2:
+            done = [cols[4 + d[data_type] : 4 + d[data_type] + 7]]
+        elif p < 4:
+            done = [cols[4 + d[data_type] : 4 + d[data_type] + 10]]
+        elif p >= 4:
+            done = []
+            z = p
+            b = 0
+            while len(range(z)) >= 4:
+                print(z)
+                done.append(cols[4 + d[data_type] + b * 10 : 4 + d[data_type] + 10 + b * 10])
+                z -= 3
+                b += 1
+            if z == 1:
+                done.append(cols[4 + d[data_type] + b * 10 : 4 + d[data_type] + 4 + b * 10])
+            elif z == 2:
+                done.append(cols[4 + d[data_type] + b * 10 : 4 + d[data_type] + 7 + b * 10])
+            elif z < 4:
+                done.append(cols[4 + d[data_type] + b * 10 : 4 + d[data_type] + 10 + b * 10])
+    else:
+       done = [cols[i : i + d[data_type]] for i in range(4 + d[data_type], 4 + d[data_type] + p * d[data_type], d[data_type])] 
+
     #~ done = [cols[i : i + 4] for i in range(4 + d[data_type], 4 + d[data_type] + p * 4, 4)]
     
     
+    
+    #~ 
+    
+    #~ done = [cols[i : i + d[data_type]] for i in range(4 + d[data_type], 4 + d[data_type] + p * d[data_type], d[data_type])]
     #~ done = [read_cols[9 + i : 19 + i] for i in range(0, p * 10, 10)]
     #~ done = [read_cols[19 + i : 11 + i : -1] for i in range(0, p * 8, 8)]
     #~ done = [read_cols[i : 8 + i] for i in range(0, p * 8 + 1, 8)]
     print(done)
     
-    print('\n')
+    #~ print('\n')
     #~ print(str(bin(int(cols[4:], 2) ^ int(read_mask[:len(cols[4:])], 2)))[2:])
-    print(cols[:4], cols[4 : 4 + d[data_type]], cols[4 + d[data_type]:])
-    print('\n')
-     
+    #~ print(cols[:4], cols[4 : 4 + d[data_type]], cols[4 + d[data_type]:])
+    #~ print('\n')
+    answer = ''
     if data_type == '0001':
         for i in done:
-            print(int(i, 2))
+            answer += str(int(i, 2))
     elif data_type == '0100':
         for i in done:
-            print(chr(int(i, 2)))
+            answer += str(chr(int(i, 2)))
     
+    print('\n\nDecoded: %s'%answer)
+    #~ print('\nqqq')
     #~ print(cols[:8], cols[4 : 12], cols[12 : 20], cols[20 : 28], cols[28 : 36], cols[36 : 44])
     #~ print(list(map(lambda x: int(x, 2), [cols[:8], cols[4 : 12], cols[12 : 20], cols[20 : 28], cols[28 : 36], cols[36 : 44]])))
     #~ a = [cols[i : i + 8] for i in range(p, p ** 2, 8)]
     #~ print(a)
     cv2.imshow('cropped', gray_cropped)
     cv2.imshow('default', gray)
-    cv2.waitKey(1000000)
+    cv2.waitKey(10000000)
 
-#~ print(qr(cv2.imread('qrcode12.png')))
-#~ print(qr(cv2.imread('qrcodehelloworld.png')))
-print(qr(cv2.imread('qrcode15.png')))
+#~ print(qr(cv2.imread('qr-code.png')))
+print(qr(cv2.imread('qrcodehelloworld.png')))
+#~ print(qr(cv2.imread('qrcodehwh.png')))
+#~ print(qr(cv2.imread('qrcodeup.png')))
+#~ print(qr(cv2.imread('qrcodedown.png')))
